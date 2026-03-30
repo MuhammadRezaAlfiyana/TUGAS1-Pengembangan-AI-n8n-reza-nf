@@ -1,0 +1,162 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -112,
+        -32
+      ],
+      "id": "777f290c-12a1-430d-bed5-0cbbd1d98a81",
+      "name": "When chat message received",
+      "webhookId": "cd18b7a3-08d8-4e9d-85c1-a5a0b7a9d792",
+      "notes": "Kamu adalah asisten pelatihan NF Academy. Gunakan tool Google Sheets untuk mencari informasi harga dan deskripsi pelatihan. Jawab dengan ramah dan jangan mengarang data kalau tidak ada di tabel."
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "Kamu adalah asisten pintar NF Academy. Gunakan tool Google Sheets untuk mencari informasi harga dan deskripsi pelatihan. Jawablah dengan ramah berdasarkan data yang ada."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        112,
+        -32
+      ],
+      "id": "0f8417e2-e85a-4bd5-8072-9a6c2d8055d7",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        16,
+        224
+      ],
+      "id": "0dccc7cf-db18-41d8-b9ae-f6ea504c6bc3",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "t39SHvbYS3oE4xBr",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        160,
+        288
+      ],
+      "id": "9f8a3bde-6639-4ed8-8bef-ea930e2b1a24",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1g-jYICRIbsk1jtBCUOJCp0Dmmz30LFVV3E-fPE1jrNU",
+          "mode": "list",
+          "cachedResultName": "TUGAS2-PENGEMBANGAN GEN AI-REZA",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1g-jYICRIbsk1jtBCUOJCp0Dmmz30LFVV3E-fPE1jrNU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1g-jYICRIbsk1jtBCUOJCp0Dmmz30LFVV3E-fPE1jrNU/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        272,
+        176
+      ],
+      "id": "cfc8eda6-a326-46b0-af15-ac264f8932dc",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3O6f9p3PUz76wofw",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "809e9d16-d563-4de1-9beb-feacbb9639a9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e122610c14387a77f679a65917b4917ca16235c733539fffba7e4a02104eef5a"
+  },
+  "id": "lzRqENkZvjwZBqrW",
+  "tags": []
+}
