@@ -1,0 +1,218 @@
+{
+  "name": "BNSP_UJIAN_Implementasi AI untuk Manajemen SDM (Tugas 7)_Muhammad Reza Alfiyana",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "includeSpamTrash": true,
+          "includeDrafts": true,
+          "q": "label:INBOX has:attachment filename:pdf"
+        },
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        464
+      ],
+      "id": "ca49c1a1-8926-4eda-b418-65eb89d303b0",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IW80CwVu88kNPOwp",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all(); // Ambil data input \n\nfor (let item of items) {\n  const binaryData = item.binary?.Upload_CV__PDF_;\n\n  if (binaryData) {\n    item.json.cv_base64 = binaryData.data; // Data base64 internal \n    item.json.fileName = binaryData.fileName;\n  }\n\n  // Tambahkan tanggal format Indonesia menggunakan Luxon \n  item.json.tanggal_input = DateTime.now().toFormat('dd-MM-yyyy HH:mm');\n}\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        464
+      ],
+      "id": "89e6a8fa-4d6e-49bd-b1d5-a9570c7d5965",
+      "name": "Mengonversi ke Base"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Peran: Anda adalah Senior Design Recruiter yang sangat teliti dan objektif. Tugas Anda adalah mengevaluasi teks CV kandidat di bawah ini untuk posisi IT Designer / UI-UX Designer.\n\nKonteks CV Kandidat:\n\"\"\"\n{{ $json.text }}\n\"\"\"\n\nInstruksi Penilaian:\n1. Analisis pengalaman kerja dalam bidang desain, keahlian visual (UI/UX), dan pemahaman sistem desain.\n2. Identifikasi apakah kandidat memiliki pengalaman dengan tool seperti: Figma, Adobe XD, Canva, Laravel (Frontend), CSS, atau Prototype Design.\n3. Berikan skor profesional dari 0-100 berdasarkan relevansi portofolio dan tool desain yang dikuasai.\n   - Skor < 50: Tidak relevan/Pemula (No design background).\n   - Skor 50-75: Menengah/Potensial (Paham tool tapi belum expert).\n   - Skor > 75: Sangat Cocok/Senior (Kuat di Figma dan Laravel UI).\n\nFormat Output (WAJIB JSON):\nJangan berikan basa-basi atau teks pembuka. HANYA berikan output JSON valid dengan struktur berikut:\n{\n  \"candidate_name\": \"Nama lengkap kandidat (jika ada)\",\n  \"years_of_experience\": \"Estimasi total tahun pengalaman (angka)\",\n  \"top_skills\": [\"Skill 1\", \"Skill 2\", \"Skill 3\", \"Skill 4\", \"Skill 5\"],\n  \"summary\": \"Ringkasan profil kandidat dalam 1 paragraf pendek (maksimal 30 kata) dalam Bahasa Indonesia.\",\n  \"strengths\": \"Poin kuat kandidat dalam bidang desain\",\n  \"weaknesses\": \"Kekurangan dalam hal teknis desain\",\n  \"score\": 0,\n  \"hiring_recommendation\": \"YES / NO / MAYBE\"\n}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        384,
+        464
+      ],
+      "id": "5096b96f-cc67-4d58-9852-21d4de1dbf8b",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        384,
+        704
+      ],
+      "id": "159f1497-37c1-4287-9690-cbe37b0459ec",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "t39SHvbYS3oE4xBr",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nfor (let item of items) {\n  const aiResponseText = item.json.text; // Output teks dari LLM\n  \n  try {\n    // 1. Bersihkan formatting jika AI memberikan markdown ```json ... ```\n    const cleanJson = aiResponseText.replace(/```json|```/g, '').trim();\n    \n    // 2. Parse string menjadi Objek\n    const parsedData = JSON.parse(cleanJson);\n    \n    // 3. Masukkan ke item.json agar bisa dipanggil node selanjutnya\n    item.json.ai_name = parsedData.candidate_name;\n    item.json.ai_exp = parsedData.years_of_experience;\n    item.json.ai_skills = parsedData.top_skills.join(\", \"); // Array jadi string\n    item.json.ai_summary = parsedData.summary;\n    item.json.ai_score = parsedData.score;\n    item.json.ai_rec = parsedData.hiring_recommendation;\n    \n  } catch (error) {\n    // Fallback jika AI gagal generate JSON valid\n    item.json.error = \"Gagal parsing JSON dari AI\";\n    item.json.raw_output = aiResponseText;\n  }\n}\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        464
+      ],
+      "id": "3de595d9-bd57-4002-a0ae-01bea619ef4a",
+      "name": "Mengubah ke JSON Objek"
+    },
+    {
+      "parameters": {
+        "chatId": "7339847977",
+        "text": "=Nama : {{ $json.ai_name }}\nSkills : {{ $json.ai_skills }}\nScore : {{ $json.ai_score }}\nSummary : {{ $json.ai_summary }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        912,
+        464
+      ],
+      "id": "01dcc596-4894-43d4-a183-2a2ffec9f57f",
+      "name": "Send a text message1",
+      "webhookId": "6c6fd5e4-a682-422a-bce0-f2bd1fdcf431",
+      "credentials": {
+        "telegramApi": {
+          "id": "lWvhUcE99S0dLmuG",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "attachment_0",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -32,
+        464
+      ],
+      "id": "1bfbb91f-9198-4cd3-aebd-70a0b7e0cac8",
+      "name": "Baca Teks CV"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Baca Teks CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mengonversi ke Base": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "Mengubah ke JSON Objek",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mengubah ke JSON Objek": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baca Teks CV": {
+      "main": [
+        [
+          {
+            "node": "Mengonversi ke Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "958165d9-f03c-485b-9f41-1112a91143bb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e122610c14387a77f679a65917b4917ca16235c733539fffba7e4a02104eef5a"
+  },
+  "id": "LI10wePtKxsJsHni",
+  "tags": []
+}
